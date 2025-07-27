@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Kuis Tanda Koma</title>
+  <style>
+    body {
+      background: #f0e6d6;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      margin: 0;
+      padding: 40px 0;
+    }
+    #game {
+      background: linear-gradient(120deg, #225c21 90%, #e6e6e6 100%);
+      border: 7px solid #fff;
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+      padding: 40px 30px;
+      width: 400px;
+      min-height: 400px;
+      position: relative;
+      box-sizing: border-box;
+    }
+    #question {
+      background: rgba(255,255,255,0.11);
+      border: 2px dashed #fff;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 1.25em;
+      margin-bottom: 24px;
+      padding: 20px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      transition: background 0.2s;
+      user-select: none;
+      text-align: center;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+    #question:active {
+      background: rgba(255,255,255,0.18);
+    }
+    #answers {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    #answers button {
+      background: rgba(255,255,255,0.20);
+      border: 2px solid #fff;
+      border-radius: 10px;
+      color: #ffe;
+      font-size: 1.06em;
+      padding: 14px 10px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 500;
+      letter-spacing: 0.5px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.09);
+      transition: background 0.15s, color 0.15s;
+    }
+    #answers button:active {
+      background: #f7f7c6;
+      color: #225c21;
+    }
+    #progress {
+      position: absolute;
+      top: 12px;
+      right: 24px;
+      color: #fff;
+      font-size: 0.95em;
+      opacity: 0.8;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <div id="progress"></div>
+    <div id="question" tabindex="0"></div>
+    <div id="answers"></div>
+  </div>
+  <audio id="bell" src="https://example.com/audio/bell.mp3" preload="auto"></audio>
+  <script>
+    // Quiz data: Bahasa Indonesia
+    const questions = [
+      {
+        question: "Kalau ingin beli barang mahal, apa yang harus dilakukan?",
+        answers: [
+          "Langsung beli walau uang belum cukup.",
+          "Minta terus ke orang tua.",
+          "Nabung dan buat rencana."
+        ],
+        correct: 2
+      }
+    ];
+
+    let current = 0;
+
+    function getIndonesianFemaleVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      let voice = voices.find(v => v.lang.startsWith('id') && v.name.toLowerCase().includes('female'));
+      if (!voice) voice = voices.find(v => v.lang.startsWith('id'));
+      if (!voice) voice = voices.find(v => v.lang.startsWith('en') && v.name.toLowerCase().includes('female'));
+      return voice;
+    }
+
+    function speak(text) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        const voice = getIndonesianFemaleVoice();
+        if (voice) {
+          utter.voice = voice;
+        }
+        utter.lang = 'id-ID';
+        utter.rate = 1;
+        utter.pitch = 1.1;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    function showQuestion() {
+      const q = questions[current];
+      const questionDiv = document.getElementById('question');
+      const answersDiv = document.getElementById('answers');
+      const progressDiv = document.getElementById('progress');
+
+      questionDiv.textContent = q.question;
+      answersDiv.innerHTML = '';
+      progressDiv.textContent = `Soal ${current + 1} dari ${questions.length}`;
+
+      questionDiv.onclick = () => {
+        speak(q.question + ' ' + q.answers.map((a, i) => `Pilihan ${i + 1}: ${a}`).join('. '));
+      };
+
+      q.answers.forEach((ans, idx) => {
+        const btn = document.createElement('button');
+        btn.textContent = ans;
+        btn.tabIndex = 0;
+
+        btn.onclick = () => {
+          if (idx === q.correct) {
+            document.getElementById('bell').play();
+            setTimeout(() => {
+              if (current + 1 < questions.length) {
+                current++;
+                showQuestion();
+              } else {
+                questionDiv.textContent = "Kuis selesai! Hebat!";
+                answersDiv.innerHTML = "";
+                progressDiv.textContent = "";
+                speak("Selamat, kamu sudah menyelesaikan kuis!");
+              }
+            }, 500);
+          } else {
+            speak("Coba lagi.");
+          }
+        };
+        answersDiv.appendChild(btn);
+      });
+    }
+
+    if (typeof speechSynthesis !== "undefined" && speechSynthesis.onvoiceschanged !== undefined) {
+      speechSynthesis.onvoiceschanged = showQuestion;
+    } else {
+      showQuestion();
+    }
+  </script>
+</body>
+</html>
